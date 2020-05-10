@@ -287,4 +287,6 @@ VariableEnvironment: {
 
 最后就是完成所有对这些变量的分配，然后执行代码，包括变量赋值，函数调用等
 
-注：let a;会被赋值为 undefined。
+注："let a" a 会被赋值为 undefined。
+
+可参考：[w3c 执行上线文标准](https://www.w3.org/html/ig/zh/wiki/ES5/%E5%8F%AF%E6%89%A7%E8%A1%8C%E4%BB%A3%E7%A0%81%E4%B8%8E%E6%89%A7%E8%A1%8C%E7%8E%AF%E5%A2%83)
