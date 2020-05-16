@@ -1,20 +1,20 @@
 const net = require("net");
 class ResponseParser {
   constructor() {
-    this.WAITING_STATUS_LINE = 0;
-    this.WAITING_STATUS_LINE_END = 1;
-    this.WAITING_HEADER_NAME = 2;
-    this.WAITING_HEADER_SPACE = 3;
-    this.WAITING_HEADER_VALUE = 4;
-    this.WAITING_HEADER_LINE_END = 5;
-    this.WAITING_HEADER_BLOCK_END = 6;
-    this.WAITING_BODY = 7;
-    this.current = this.WAITING_STATUS_LINE;
+    this.WAITING_STATUS_LINE = 0; // 状态行开始
+    this.WAITING_STATUS_LINE_END = 1; // 状态行结束
+    this.WAITING_HEADER_NAME = 2; // headerName
+    this.WAITING_HEADER_SPACE = 3; // 空格
+    this.WAITING_HEADER_VALUE = 4; // headerValue
+    this.WAITING_HEADER_LINE_END = 5; // 请求头行结束
+    this.WAITING_HEADER_BLOCK_END = 6; // 请求头换行
+    this.WAITING_BODY = 7; // 消息体
+    this.current = this.WAITING_STATUS_LINE; // 当前的状态
     this.headers = {};
     this.headerName = "";
     this.headerValue = "";
     this.statusLine = "";
-    this.bodyParser = null;
+    this.bodyParser = null; // 消息解析器
   }
 
   get isFinished() {
@@ -22,7 +22,8 @@ class ResponseParser {
   }
 
   get response() {
-    this.statusLine.match(/HTTP\/1.1 ([0-9]+) ([\s\S]+)/);
+    this.statusLine.match(/HTTP\/1.1 ([0-9]+) ([\s\S]+)/); // 匹配响应状态码和状态文本
+    console.log(this.bodyParser.content);
     return {
       statusCode: RegExp.$1,
       statusText: RegExp.$2,
@@ -86,6 +87,8 @@ class ResponseParser {
     }
   }
 }
+
+// 消息体解析类
 class TrunkedBodyParser {
   constructor() {
     this.WAITING_LENGTH = 0;
@@ -106,6 +109,7 @@ class TrunkedBodyParser {
         }
         this.current = this.WAITING_LENGTH_LINE_END;
       } else {
+        // 十进制运算
         this.length *= 10;
         this.length += char.charCodeAt(0) - "0".charCodeAt(0);
       }
@@ -219,6 +223,5 @@ void (async function () {
     },
     path: "/",
   });
-
   await request.send();
 })();
