@@ -15,10 +15,14 @@ function match(pattern, str) {
     const functions = [] // 存储状态机
     const charList = pattern.split('') // 将字符串分割成数组
     let lastIndex = charList.length - 1;
+    let index = -1;
+    let tmp;
+    let j = 0;
     let start; // 初始状态机
     let res;
-    charList.forEach((c, i) => {
+    charList.forEach((c, i, list) => {
         if (i === 0) {
+            tmp = c;
             start = function (input) {
                 if (input === c) {
                     if (i === lastIndex) {
@@ -26,6 +30,7 @@ function match(pattern, str) {
                     } else {
                         return i + 1; // 返回下一个状态机的索引
                     }
+
                 } else {
                     return start
                 }
@@ -33,15 +38,24 @@ function match(pattern, str) {
         }
 
 
-        functions.push(i === 0 ? start : function (input) {
+        functions.push(i === 0 ? start : function next(input) {
             if (input === c) {
+                if(index === -1){
+                    if(input === tmp) {
+                        index = 0;
+                    }
+                } else if(input === list[index + 1]){
+                    index++;
+                } else {
+                    index = -1;
+                }
                 if (i === lastIndex) {
                     return end
                 } else {
                     return i + 1; // 返回下一个索引。用于缓存下一个状态机
                 }
             } else {
-                return start // 将input加入初始状态机
+                return index > -1 ? functions[index+1](input) : start(input)// 将input加入初始状态机
             }
         })
     })
@@ -50,7 +64,8 @@ function match(pattern, str) {
         let state = start;
 
         for (let c of str) {
-            state = typeof state(c) === 'number' ? functions[state(c)] : state(c)
+            j = state(c);
+            state = typeof j === 'number' ? functions[j ] : j 
         }
         res = state === end;
     }(str)
@@ -60,4 +75,5 @@ function match(pattern, str) {
 
 console.log(match('ab', 'abbax')) // true
 console.log(match('cas', 'cscas')) // true
-console.log(match('sdsdx', 'sdsdsdx')) // false
+console.log(match('ab','aab')) // true
+console.log(match('ssd', 'ssdssdx')) // true
