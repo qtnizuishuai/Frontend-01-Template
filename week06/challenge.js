@@ -55,7 +55,14 @@ function match(pattern, str) {
                     return i + 1; // 返回下一个索引。用于缓存下一个状态机
                 }
             } else {
-                return index > -1 ? functions[index+1](input) : start(input)// 将input加入初始状态机
+                if(index > -1){
+                    let tmp = index + 1;
+                    index = -1;
+                    return functions[tmp](input)  // 加入最大匹配子串的状态机
+                } else {
+                    return start(input)  // 将input加入初始状态机
+                }
+              
             }
         })
     })
@@ -77,3 +84,4 @@ console.log(match('ab', 'abbax')) // true
 console.log(match('cas', 'cscas')) // true
 console.log(match('ab','aab')) // true
 console.log(match('ssd', 'ssdssdx')) // true
+console.log(match("abcaba", "abcabsab"))
