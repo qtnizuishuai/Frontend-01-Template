@@ -245,6 +245,6 @@ let request = new Request({
 
 request.send().then((data) => {
   // console.log('response: \n=====================\n', data.body, '\n=====================\n')
-  // console.log('response: \n=====================\n', parseHTML(data.body), '\n=====================\n')
+  console.log('response: \n=====================\n', parseHTML(data.body), '\n=====================\n')
   parseHTML(data.body)
 })

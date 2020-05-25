@@ -10,11 +10,6 @@ function match(element, selector) {
       }
     } else if (selector.charAt(0) === '.') {
       var attr = element.attributes.filter((attr) => attr.name === 'class')[0]
-      // if (attr && attr.value === selector.replace('.', '')) {
-      //   return true
-      // }
-      // 选做homework
-      // 😈测试通过
       if (
         attr &&
         attr.value
