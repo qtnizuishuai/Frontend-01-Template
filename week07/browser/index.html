@@ -1,11 +1,42 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html />
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>tiny browser</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="shortcut icon" href="./favicon.ico" />
+  <title>toy browser</title>
+  <style>
+      .container{
+          display: flex;
+          width:800px;
+          justify-content: space-between;
+      }
+      .container div{
+          height:100px;
+      }
+     .container #myid {
+       width: 100px;
+       height:100px;
+       background-color: #432322;
+     }
+     .container .a {
+       width: 100px;
+       height:100px;
+       background-color: #ff5000;
+     }
+
+     .container .b {
+       width: 100px;
+       height:100px;
+       background-color: #787212;
+     }
+  </style>
 </head>
 <body>
-    hello bar!
+    <div class="container">
+        <div id="myid"></div>
+        <div class="a"></div>
+        <div class="b"></div>
+    </div>
 </body>
 </html>

@@ -1,7 +1,9 @@
 const EOF = Symbol('EOF') // EOF end of file
 const css = require('css')
+const layout = require('./layout.js')
 const computeCSS = require('./computeCSS')
-
+const tagNameReg = /^!|[a-zA-Z]$/;
+const spaceReg = /^[\t\n\f ]$/;
 let currentToken = null
 let currentAttribute = null
 let currentTextNode = null
@@ -17,12 +19,14 @@ function addCSSRules(text) {
 }
 
 function emit(token) {
-  let top = stack[stack.length - 1]
+  let top = stack[stack.length - 1];
   if (token.type === 'startTag') {
+      // 我们抽象一个element对象用来表示dom元素，tag是语义化的称呼
     let element = {
       type: 'element',
       children: [],
-      attributes: []
+      attributes: [], 
+      parent:top // 记录父元素 便于css计算
     }
 
     element.tagName = token.tagName
@@ -35,24 +39,28 @@ function emit(token) {
         })
       }
     }
-
+    // 创建了元素就去做css computing
+    // 跟style的添加不一样，我们希望尽可能的早计算css，如果也像style一样在出栈的时候才去计算css，会造成页面渲染延迟
     computeCSS(element, stack, rules)
 
-    top.children.push(element)
-    element.parent = top
+    top.children.push(element) // 自封闭标签到这一步就已完成，不必入栈
 
-    if (!token.isSelfClosing) {
+    if (!token.isSelfClosing) { // 不是自封闭标签，入栈
       stack.push(element)
     }
 
     currentTextNode = null
   } else if (token.type === 'endTag') {
+      // 要遍历完元素的子元素进行layout，实际浏览器需要根据元素的属性做判断，更加复杂
     if (top.tagName !== token.tagName) {
       throw new Error("Tag start end doesn't match!")
     } else {
+        // 检测到style元素，收集样式
       if (top.tagName === 'style') {
-        addCSSRules(top.children[0].content)
+        addCSSRules(top.children[0].content) // 样式对象收集
       }
+      // 遍历子元素结束 layout 元素
+      layout(top)
       stack.pop()
     }
 
@@ -70,16 +78,17 @@ function emit(token) {
 }
 
 function data(c) {
-  if (c === '<') {
-    // <
+  if (c === '<') { 
+    // stater state
     return tagOpen
   } else if (c === EOF) {
+    //Emit an end-of-file token.
     emit({
       type: 'EOF'
     })
     return
   } else {
-    //
+    //Emit the current inputText  as a character token.
     emit({
       type: 'text',
       content: c
@@ -90,26 +99,37 @@ function data(c) {
 
 function tagOpen(c) {
   if (c === '/') {
-    // </
+    // 
     return endTagOpen
-  } else if (c.match(/^[a-zA-Z]$/)) {
-    // <html
+  } else if (c.match(tagNameReg)) {
+    //Create a new start tag token, that sets its `tagname` to the empty string. Reconsume in the tag name state.
     currentToken = {
       type: 'startTag',
       tagName: ''
     }
-    return tagName(c)
-  } else {
+    return tagName(c) // Reconsume in the tag name state (将参数注入状态机)
+  } else if(c === EOF) {
+       //This is an eof-before-tag-name parse error. Emit a U+003C LESS-THAN SIGN character token and an end-of-file token.
+    emit({
+        type:'text',
+        content:'\u003c'
+    })
+    emit({
+        type:'EOF'
+    })
+  }else {
+    // This is an eof-before-tag-name parse error. Emit a U+003C LESS-THAN SIGN character token and an end-of-file token.
     emit({
       type: 'text',
-      content: c
+      content: '\u003c'
     })
-    return
+    return data(c)
   }
 }
 
 function endTagOpen(c) {
-  if (c.match(/^[a-zA-Z]$/)) {
+  if (c.match(tagNameReg)) {
+      //Create a new end tag token, set its tag name to the empty string. Reconsume in the tag name state.
     // <html/
     currentToken = {
       type: 'endTag',
@@ -117,36 +137,47 @@ function endTagOpen(c) {
     }
     return tagName(c)
   } else if (c === '>') {
+    //This is a missing-end-tag-name parse error. Switch to the data state.
     // <>
+    return data
   } else if (c === EOF) {
+       //This is an eof-before-tag-name parse error. Emit a U+003C LESS-THAN SIGN character token, a U+002F SOLIDUS character token and an end-of-file token.
   } else {
+      //This is an invalid-first-character-of-tag-name parse error. Create a comment token whose data is the empty string. Reconsume in the bogus comment state.
+         //return data(c)
   }
 }
 
 function tagName(c) {
-  if (c.match(/^[\t\n\f ]$/)) {
+  if (c.match(spaceReg)) {
     // <html
     return beforeAttributeName
   } else if (c === '/') {
     // <html/
     return selfClosingStartTag
-  } else if (c.match(/^[a-zA-Z]$/)) {
-    // <h <ht ...
+  } else if (c.match(tagNameReg)) {
+    // <h <ht ... (Append the lowercase version of the current input character (add 0x0020 to the character's code point) to the current tag token's tag name.)
     currentToken.tagName += c.toLowerCase()
     return tagName
   } else if (c === '>') {
-    // <html/>
+    // <html/> (Switch to the data state. Emit the current tag token.)
     emit(currentToken)
     return data
-  } else {
+  }else if(c == EOF){
+    //This is an eof-in-tag parse error. Emit an end-of-file token.
+    emit({
+        type:"EOF"
+    }) 
+}else {
     currentToken.tagName += c.toLowerCase()
     return tagName
   }
 }
 
 function beforeAttributeName(c) {
-  if (c.match(/^[\t\n\f ]$/)) {
-    // <html
+  if (c.match(spaceReg)) {
+    //Ignore the character.
+        //return beforAttributeName
     return beforeAttributeName
   } else if (c === '/' || c === '>' || c === EOF) {
     // <html   /
@@ -165,7 +196,7 @@ function beforeAttributeName(c) {
 }
 
 function attributeName(c) {
-  if (c.match(/^[\t\n\f ]$/) || c === '/' || c === '>' || c === EOF) {
+  if (c.match(spaceReg) || c === '/' || c === '>' || c === EOF) {
     // <html m
     return afterAttributeName(c)
   } else if (c === '=') {
@@ -181,7 +212,7 @@ function attributeName(c) {
 }
 
 function beforeAttributeValue(c) {
-  if (c.match(/^[\t\n\f ]$/) || c === '/' || c === '>' || c === EOF) {
+  if (c.match(spaceReg) || c === '/' || c === '>' || c === EOF) {
     return beforeAttributeValue
   } else if (c === '"') {
     // <html m="
@@ -192,12 +223,13 @@ function beforeAttributeValue(c) {
   } else if (c === '>') {
     // // <html m=>
   } else {
+    //Reconsume in the attribute value (unquoted) state.
     return UnquotedAttributeValue(c)
   }
 }
 
 function UnquotedAttributeValue(c) {
-  if (c.match(/^[\t\n\f ]$/)) {
+  if (c.match(spaceReg)) {
     // <html maaa=a
     currentToken[currentAttribute.name] = currentAttribute.value
     return beforeAttributeName
@@ -244,7 +276,7 @@ function singleQuotedAttributeValue(c) {
 }
 
 function afterDoubleQuotedAttributeName(c) {
-  if (c.match(/^[\t\n\f ]$/)) {
+  if (c.match(spaceReg)) {
     return beforeAttributeName
   } else if (c === '/') {
     return selfClosingStartTag
@@ -261,7 +293,7 @@ function afterDoubleQuotedAttributeName(c) {
 }
 
 function afterSingleQuotedAttributeName(c) {
-  if (c.match(/^[\t\n\f ]$/)) {
+  if (c.match(spaceReg)) {
     return beforeAttributeName
   } else if (c === '/') {
     return selfClosingStartTag
@@ -277,7 +309,7 @@ function afterSingleQuotedAttributeName(c) {
 }
 
 function afterAttributeName(c) {
-  if (c.match(/^[\t\n\f ]$/)) {
+  if (c.match(spaceReg)) {
     return afterAttributeName
   } else if (c === '/') {
     return selfClosingStartTag
@@ -299,11 +331,18 @@ function afterAttributeName(c) {
 
 function selfClosingStartTag(c) {
   if (c === '>') {
+    //Set the self-closing flag of the current tag token. Switch to the data state. Emit the current tag token.
     currentToken.isSelfClosing = true
     emit(currentToken)
     return data
   } else if (c === 'EOF') {
+      //This is an eof-in-tag parse error. Emit an end-of-file token.
+    emit({
+        type:"EOF"
+    })
   } else {
+    //This is an unexpected-solidus-in-tag parse error. Reconsume in the before attribute name state.
+    return beforAttributeName(c)
   }
 }
 
@@ -311,11 +350,10 @@ function parseHTML(html) {
   let state = data
 
   for (let c of html) {
-    console.log(state)
     state = state(c)
   }
 
-  state = state(EOF)
+  state = state(EOF) //只有找完全部字符，state才会等于end
   return stack[0]
 }
 

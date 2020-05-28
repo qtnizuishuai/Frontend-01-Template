@@ -42,7 +42,7 @@ class Request {
         })
         .join('&')
     }
-    this.headers['Content-Length'] = Buffer.byteLength(this.bodyText)
+    this.headers['Content-Length'] = this.bodyText.length;
   }
 
   toString() {
@@ -72,13 +72,11 @@ ${this.bodyText}`
 
         connection.on('data', (data) => {
           parser.receive(data.toString())
-        //   console.log(parser)
-          resolve(parser.response)
-        //   if (parser.isFinished) {
-        //     resolve(parser.response)
-        //   }
+          if (parser.isFinished) {
+            resolve(parser.response)
+          }
 
-        //   connection.end()
+          connection.end()
         })
 
         connection.on('error', (error) => {
@@ -209,7 +207,7 @@ class TrunkedBodyParser {
         this.current = this.WAITING_LENGTH_LINE_END
       } else {
         this.length *= 16
-        this.length += parseInt(char.codePointAt() - '0'.codePointAt(), 16)
+        this.length += parseInt(char, 16);
       }
     } else if (this.current === this.WAITING_LENGTH_LINE_END) {
       if (char === '\n') {
@@ -251,8 +249,7 @@ request.send().then((data) => {
 
 //   parseHTML(data.body)
     const dom = parseHTML(data.body);
-    console.log(dom)
-    const view = images(1680, 1080); 
+    const view = images(1920, 1080); 
     render(view, dom);
-    view.save('tony.jpg')
+    view.save('tony-browser.jpg')
 }).catch(err => console.log(err))
