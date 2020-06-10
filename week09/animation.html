@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    .box1{
+      width: 100px;
+      height: 100px;
+      position: absolute;
+      background: red;
+      animation: mykf 1s infinite;
+    }
+    @keyframes mykf{
+      0%{ top: 0; transition: top ease; }
+      50%{ top: 30px; transition: top ease-in; }
+      75%{ top: 10px; transition: top ease-out; }
+      100%{ top: 0; transition: top linear; }
+    }
+  </style>
+</head>
+<body>
+  <div class="box1"></div>
+</body>
+</html>

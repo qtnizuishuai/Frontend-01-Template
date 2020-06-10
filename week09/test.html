@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+   
+</head>
+<body>
+    
+</body>
+<script>
+    let styles = getComputedStyle(document.body);
+    let styleArr = Object.entries(styles);
+    let res = {},prefix = ''
+    let set = new Set();
+    for(let [key, val] of styleArr){
+        if(val === '') continue;
+        if(/^(-webkit|\d+)/.test(val)) continue;
+        if(set.has(val)) continue;
+        set.add(val)
+        if(/^([a-zA-Z]+)-/.test(val)){
+            prefix = RegExp.$1;
+            if(!res[prefix]){
+                res[prefix] = [val];
+            } else{
+                res[prefix].push(val)
+            }
+        } else if(res[val]){
+            continue;
+        } else{
+            res[val] = [val]
+        }
+    }
+   console.log(res, set)
+</script>
+</html>
