@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      #main {
+        margin: 0 auto;
+        color: red;
+        text-align: center;
+        font-size: 32px;
+        line-height: 60px;
+      }
+      #help-box {
+        text-align: center;
+        margin: 20px auto;
+      }
+      .cell {
+        position: relative;
+        box-sizing: border-box;
+        display: inline-block;
+        vertical-align: middle;
+        width: 100px;
+        height: 100px;
+        border: 1px solid #fff;
+        background-color: green;
+        line-height: 100px;
+        font-size: 50px;
+        text-align: center;
+        cursor: pointer;
+      }
+      .action-list {
+        text-align: center;
+      }
+
+      button {
+        font-size: 32px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="main"></div>
+    <div id="help-box"></div>
+    <div class="action-list">
+      <button onclick="init()">重玩</button>
+    </div>
+    <script>
+      let pattern, color, currentNode, winner;
+
+      function init() {
+        pattern = [
+          [0, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0],
+        ];
+
+        color = 1;
+        currentNode = [];
+        winner = '';
+        steps = [];
+
+        const container = document.getElementById('main');
+        container.style.width = 100 * 3 + 'px';
+        container.innerText = '';
+        show();
+      }
+
+      init();
+
+      function show() {
+        let mainContainer = document.getElementById('main');
+
+        mainContainer.innerHTML = '';
+        const fragement = document.createDocumentFragment();
+        for (let i = 0; i < 3; i++) {
+          for (let j = 0; j < 3; j++) {
+            let cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.innerText =
+              pattern[i][j] === 2 ? ' ❌' : pattern[i][j] === 1 ? '⭕️' : '';
+            cell.addEventListener('click', () => move(i, j));
+            fragement.appendChild(cell);
+          }
+        }
+        mainContainer.appendChild(fragement);
+      }
+      function move(x, y) {
+        if (pattern[x][y] || winner) return;
+        pattern[x][y] = color;
+        if (check(pattern, color)) {
+          winner = color;
+          showView();
+        }
+        show();
+        color = 3 - color;
+
+        computerMove();
+      }
+
+      function showView() {
+        document.getElementById('help-box').innerText =
+          color === 2
+            ? '🎉🎉🎉 恭喜 ❌ 获得胜利！🎉🎉🎉'
+            : color === 1
+            ? '🎉🎉🎉 恭喜 ⭕️ 获得胜利! 🎉🎉🎉'
+            : '系统错误';
+      }
+
+      function computerMove() {
+        let choise = bestChoice(pattern, color);
+        if (choise.point) {
+          let [x, y] = choise.point;
+          pattern[x][y] = color;
+          if (check(pattern, color)) {
+            winner = color;
+            showView();
+          }
+          show();
+          color = 3 - color;
+        }
+     }
+
+        function willWin(pattern, color) {
+          for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+              if (pattern[i][j]) continue;
+              pattern[i][j] = color;
+              if (check(pattern, color)) {
+                pattern[i][j] = 0;
+                return [i, j];
+              }
+              pattern[i][j] = 0;
+            }
+          }
+          return null;
+        }
+
+        function check(pattern, color) {
+          let win = true;
+          // 横
+          for (let i = 0; i < 3; i++) {
+            win = true;
+            inner: for (let j = 0; j < 3; j++) {
+              if (pattern[i][j] !== color) {
+                win = false;
+                break inner;
+              }
+            }
+            if (win) {
+              return true;
+            }
+          }
+          // 纵
+
+          for (let i = 0; i < 3; i++) {
+            win = true;
+            inner: for (let j = 0; j < 3; j++) {
+              if (pattern[j][i] !== color) {
+                win = false;
+                break inner;
+              }
+            }
+            if (win) {
+              return true;
+            }
+          }
+
+          // \
+          for (let i = 0; i < 3; i++) {
+            win = true;
+            if (pattern[i][i] !== color) {
+              win = false;
+              break;
+            }
+          }
+          if (win) {
+            return true;
+          }
+          // /
+          for (let i = 0; i < 3; i++) {
+            win = true;
+            if (pattern[i][2 - i] !== color) {
+              win = false;
+              break;
+            }
+          }
+          if (win) {
+            return true;
+          }
+          return false;
+        }
+
+        function bestChoice(pattern, color) {
+          let point = willWin(pattern, color);
+          if (point) {
+            return {
+              point,
+              result: 1,
+            };
+          }
+
+          let result = -1;
+
+          outer: for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+              if (pattern[i][j]) continue;
+
+              pattern[i][j] = color;
+
+              let opposite = bestChoice(pattern, 3 - color);
+              pattern[i][j] = 0;
+              // random choose
+              if (0 - opposite.result >= result) {
+                point = [i, j];
+                result = 0 - opposite.result;
+              }
+              if (result === 1) {
+                // 输赢剪枝
+                break outer;
+              }
+            }
+          }
+
+          return {
+            point,
+            result: point ? result : 0,
+          };
+        }
+    </script>
+  </body>
+</html>
