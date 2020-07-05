@@ -1,0 +1,123 @@
+<script>
+const reg = /([0-9\.]+)|([ ]+)|([\r\n]+)|(\+)|(\-)|(\*)|(\/)/g;
+
+const dictionary = ['Number', 'Whitespace', 'LineTerminator', '+', '-', '*', '/'] // 跟正则一一匹配的字典
+
+let source = '1024 + 8 * 20';
+
+// 解析四则运算字符串
+function *tokenize (source) {
+    let result = null;
+    let lastIndex = 0;
+    while(true) {
+        // matches str
+        lastIndex = reg.lastIndex;
+        result = reg.exec(source);
+
+        if(!result)
+            break; // matches belong to null, break
+        let matchLen = reg.lastIndex - lastIndex;
+        let offset = matchLen - result[0].length;
+        if(offset > 0) {
+            throw new Error(`unExpected token ${source.substr(lastIndex, offset)}` );
+        }
+
+        // generate token
+        let token = {
+            type:'',
+            value:null
+        }
+        for(let i = 0; i < dictionary.length;i++){
+            if(result[i + 1]) {
+                token.type = dictionary[i]
+            }
+        }
+        token.value = result[0]; // 全匹配
+        yield token;
+    }
+
+    yield {type:'EOF'} // end tag
+}
+
+function Expression(source) {
+    if(source[0].type === 'AdditiveExpression' && source[1] && source[1].type === 'EOF') {
+        let node = {
+            type: 'Expression',
+            children:[source.shift(), source.shift()]
+        }
+        source.unshift(node);
+        return node;
+    }
+    AdditiveExpression(source);
+    return Expression(source)
+}
+
+function AdditiveExpression(source) {
+    if(source[0].type === 'Number') {
+        MultiplicativeExpression(source)
+        return AdditiveExpression(source)
+    }
+    if(source[0].type === 'MultiplicativeExpression') {
+        let node = {
+            type: 'AdditiveExpression',
+            children: [source.shift()]  // 取出
+        }
+        source.unshift(node); // 塞进处理后的节点
+        return AdditiveExpression(source)
+    }
+    if(source[0].type === 'AdditiveExpression' && source.length > 1 && ['+', '-'].includes(source[1].type)) {
+        let node = {
+            type:'AdditiveExpression',
+            children: [source.shift(), source.shift()]
+        }
+        MultiplicativeExpression(source);
+        node.children.push(source.shift())
+        source.unshift(node);
+        return AdditiveExpression(source)
+    }
+
+    if(source[0].type === 'AdditiveExpression') {
+        return source[0]
+    }
+
+    throw new Error();
+}
+function MultiplicativeExpression(source) {
+    // if first is Number
+    if(source[0].type === 'Number') {
+        let node = {
+            type: 'MultiplicativeExpression',
+            children: source.shift()  // 取出
+        }
+        source.unshift(node); // 塞进处理后的节点
+        return MultiplicativeExpression(source)
+    }
+
+    if(source[0].type === 'MultiplicativeExpression' && source.length > 1 && ['*', '/'].includes(source[1].type)) {
+        let node = {
+            type:'MultiplicativeExpression',
+            children: [source.shift(), source.shift(), source.shift()]
+        }
+        source.unshift(node);
+        return MultiplicativeExpression(source)
+    }
+
+    if(source[0].type === 'MultiplicativeExpression') {
+        return source[0]
+    }
+    console.log(source[0].type)
+
+    throw new Error();
+}
+
+
+
+let stack = []
+
+for(let token of tokenize(source)) {
+    if(token.type !== 'Whitespace' && token.type !== 'LineTerminator')
+    stack.push(token)
+}
+console.log(AdditiveExpression(stack));
+
+</script>
