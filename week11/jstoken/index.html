@@ -46,9 +46,9 @@
       let text = document.createElement('span');
       text.textContent = token[0];
 
-      for (let i = 0; i < 4; i++) {
+      for (let i = 1; i < 5; i++) {
         if (token[i]) {
-          text.classList.add(dictionary[i]);
+          text.classList.add(dictionary[i - 1]);
         }
       }
       container.appendChild(text);
