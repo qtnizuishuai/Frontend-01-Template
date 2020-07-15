@@ -31,20 +31,23 @@
 <script>
 
 	let drag = document.getElementById('dragable')
-
-	let baseX = 0, baseY = 0;
+    // 记录x轴，y轴移动的距离
+	// let baseX = 0, baseY = 0;
 	drag.addEventListener('mousedown', function (event) {
 	  let startX = event.clientX, startY = event.clientY;
     
 	  let move = throttle(event => {
-	    // let x = baseX + event.clientX - startX, y = baseY + event.clientY - startY;
+        // let x = baseX +   event.clientX - startX, y =  baseY + event.clientY - startY;
 	    // drag.style.transform = `translate(${x}px,${y}px)`
 
 		  let range = nearest(event.clientX, event.clientY)
 		  range.insertNode(drag)
 	  }, 10)
-	  let up = (e) => {
-	    baseX = baseX + e.clientX - startX, baseY = baseY + e.clientY - startY;
+	  let up = (event) => {
+        // baseX = baseX + event.clientX - startX;
+        // baseY  = baseY+ event.clientY - startY;
+        // console.log(baseX, baseY)
+
 	    document.removeEventListener('mousemove', move)
 	    document.removeEventListener('mouseup', up)
 	  }
@@ -74,6 +77,7 @@
 		range.setEnd(container.childNodes[0], i)
 		ranges.push(range)
 	}
+    console.log(ranges)
 
 	function nearest(px, py) {
 	  let nearestRange = null
@@ -81,7 +85,7 @@
 		for (let range of ranges) {
 		  let {x, y} = range.getBoundingClientRect()
 			let d = (px - x) ** 2 + (py - y) **2
-
+            console.log(d)
 			if (d < distance) {
 			  nearestRange = range
 				distance = d
